@@ -1,9 +1,17 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.PracticaSupabase" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
-    </style>
+    <!-- Base application theme. Siempre claro: el diseño es verde sobre blanco -->
+    <style name="Base.Theme.PracticaSupabase" parent="Theme.Material3.Light.NoActionBar" />
 
-    <style name="Theme.PracticaSupabase" parent="Base.Theme.PracticaSupabase" />
+    <style name="Theme.PracticaSupabase" parent="Base.Theme.PracticaSupabase">
+        <item name="colorPrimary">@color/verde_uteq</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorPrimaryContainer">@color/verde_claro</item>
+        <item name="colorOnPrimaryContainer">@color/verde_oscuro</item>
+        <item name="colorSecondary">@color/amarillo_uteq</item>
+        <item name="colorOnSecondary">@color/black</item>
+        <item name="android:colorBackground">@color/white</item>
+        <item name="colorSurface">@color/white</item>
+        <item name="colorSurfaceContainer">@color/verde_claro</item>
+        <item name="colorOutline">@color/verde_borde</item>
+    </style>
 </resources>

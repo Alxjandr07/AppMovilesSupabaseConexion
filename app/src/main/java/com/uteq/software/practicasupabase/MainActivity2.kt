@@ -1,15 +1,22 @@
 package com.uteq.software.practicasupabase
 
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
-import android.widget.ArrayAdapter
-import android.widget.AutoCompleteTextView
+import android.widget.ImageView
+import android.widget.ListView
+import android.widget.SimpleAdapter
 import android.widget.Toast
+import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
+import com.bumptech.glide.Glide
+import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import com.uteq.software.practicasupabase.data.SupabaseManager
+import com.uteq.software.practicasupabase.models.Alumno
 import com.uteq.software.practicasupabase.models.Materia
 import com.uteq.software.practicasupabase.utils.SupabaseErrorHandler
 import io.github.jan.supabase.postgrest.from
@@ -19,13 +26,15 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 class MainActivity2 : AppCompatActivity() {
-    private lateinit var listaNiveles: AutoCompleteTextView
-    private lateinit var actvMaterias: AutoCompleteTextView
     private var consultaMaterias: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        // Barras del sistema claras (íconos oscuros) porque el fondo es blanco
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
+        )
         setContentView(R.layout.activity_main2)
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -33,17 +42,8 @@ class MainActivity2 : AppCompatActivity() {
             insets
         }
 
-        listaNiveles = findViewById(R.id.listaNiveles)
-        actvMaterias = findViewById(R.id.actvmaterias)
-
-        configurarNiveles()
-    }
-
-    private fun configurarNiveles() {
-        val niveles = resources.getStringArray(R.array.niveles)
-        listaNiveles.setAdapter(
-            ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, niveles)
-        )
+        // Los semestres ya vienen del XML con app:simpleItems="@array/niveles"
+        val listaNiveles = findViewById<MaterialAutoCompleteTextView>(R.id.listaNiveles)
         listaNiveles.setOnItemClickListener { parent, _, position, _ ->
             val seleccionado = parent.getItemAtPosition(position).toString()
             Toast.makeText(this, "Seleccionaste: $seleccionado", Toast.LENGTH_SHORT).show()
@@ -51,30 +51,86 @@ class MainActivity2 : AppCompatActivity() {
             // position empieza en 0, por eso el nivel 1 es position + 1
             cargarMaterias(position + 1)
         }
+
+        // Encabezado de la lista: se agrega antes de cargar los alumnos
+        val lvAlumnos = findViewById<ListView>(R.id.lvAlumnos)
+        val header = layoutInflater.inflate(R.layout.ly_header, lvAlumnos, false)
+        lvAlumnos.addHeaderView(header, null, false)
+
+        // getItemAtPosition() devuelve el mapa del alumno aunque haya encabezado
+        lvAlumnos.setOnItemClickListener { parent, _, position, _ ->
+            val alumno = parent.getItemAtPosition(position) as? Map<*, *>
+                ?: return@setOnItemClickListener
+            Toast.makeText(this, "Item seleccionado: ${alumno["nombres"]}",
+                Toast.LENGTH_SHORT).show()
+        }
+
+        // Los alumnos se cargan al abrir la pantalla; no dependen del semestre
+        cargarAlumnos()
+    }
+
+    private fun cargarAlumnos() {
+        lifecycleScope.launch {
+            try {
+                val alumnos = SupabaseManager.client.from("alumnos")
+                    .select { order("nombres", Order.ASCENDING) }
+                    .decodeList<Alumno>()
+
+                // Cada alumno se vuelve un mapa; sus claves se enlazan con los TextView de item_alumno.xml
+                val datos = alumnos.map {
+                    mapOf(
+                        "id" to it.id,
+                        "nombres" to it.nombres.orEmpty(),
+                        "correo" to it.correo.orEmpty(),
+                        "telefono" to it.telefono.orEmpty(),
+                        "foto" to it.foto.orEmpty()
+                    )
+                }
+                val adapter = SimpleAdapter(
+                    this@MainActivity2, datos, R.layout.item_alumno,
+                    arrayOf("foto", "nombres", "correo", "telefono"),
+                    intArrayOf(R.id.imgFoto, R.id.txtNombre, R.id.txtCorreo, R.id.txtTelefono)
+                )
+                // SimpleAdapter no sabe descargar imágenes de internet: la foto la carga Glide
+                adapter.viewBinder = SimpleAdapter.ViewBinder { view, data, _ ->
+                    if (view !is ImageView) return@ViewBinder false
+                    val gris = ColorDrawable(Color.LTGRAY)
+                    Glide.with(view)
+                        .load((data as? String)?.ifEmpty { null })
+                        .placeholder(gris)
+                        .error(gris)
+                        .dontAnimate() // CircleImageView no admite la animación de Glide
+                        .into(view)
+                    true
+                }
+                findViewById<ListView>(R.id.lvAlumnos).adapter = adapter
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                SupabaseErrorHandler.show(this@MainActivity2, e)
+            }
+        }
     }
 
     private fun cargarMaterias(nivel: Int) {
         // Si se cambia de semestre rápido, se descarta la consulta anterior
         consultaMaterias?.cancel()
-        actvMaterias.setText("", false)
-        actvMaterias.setAdapter(null)
 
         consultaMaterias = lifecycleScope.launch {
+            val selector = findViewById<MaterialAutoCompleteTextView>(R.id.listaMaterias)
+            selector.setText("", false)
+            selector.setSimpleItems(emptyArray<String>())
             try {
-                val materias = SupabaseManager.client
-                    .from("materias_copia")
+                val materias = SupabaseManager.client.from("materias_copia")
                     .select {
                         filter { eq("nivel", nivel) }
                         order("nombre", Order.ASCENDING)
                     }
                     .decodeList<Materia>()
 
-                actvMaterias.setAdapter(
-                    ArrayAdapter(
-                        this@MainActivity2,
-                        android.R.layout.simple_dropdown_item_1line,
-                        materias.map { it.nombre ?: "" }
-                    )
+                // map() saca los nombres y toTypedArray() los vuelve el arreglo que pide setSimpleItems()
+                selector.setSimpleItems(
+                    materias.map { it.nombre.orEmpty() }.toTypedArray()
                 )
             } catch (e: CancellationException) {
                 throw e

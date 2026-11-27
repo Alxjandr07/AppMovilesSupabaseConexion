@@ -41,7 +41,7 @@ class MainActivity : AppCompatActivity() {
                     "No se encontraron alumnos."
                 } else {
                     alumnos.joinToString("\n\n") { a ->
-                        "Nombre: ${a.nombres}\n" +
+                        "Nombre: ${a.nombres ?: "Sin registrar"}\n" +
                                 "Paralelo: ${a.paralelo ?: "Sin registrar"}\n" +
                                 "Correo: ${a.correo ?: "Sin registrar"}\n" +
                                 "Teléfono: ${a.telefono ?: "Sin registrar"}"

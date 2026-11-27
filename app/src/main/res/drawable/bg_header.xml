@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Franja verde con esquinas redondeadas para el encabezado de la lista -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/verde_uteq" />
+    <corners android:radius="12dp" />
+</shape>

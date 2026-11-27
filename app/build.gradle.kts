@@ -60,6 +60,10 @@ dependencies {
     implementation("io.ktor:ktor-client-android:3.5.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.2")
 
+    // Foto redonda del alumno y descarga de la imagen desde su URL
+    implementation("de.hdodenhof:circleimageview:3.1.0")
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)

@@ -2,4 +2,12 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Colores UTEQ -->
+    <color name="verde_uteq">#FF1B7A3A</color>
+    <color name="verde_oscuro">#FF0F5226</color>
+    <color name="verde_claro">#FFEAF6EC</color>
+    <color name="verde_borde">#FFB9DEC2</color>
+    <color name="amarillo_uteq">#FFF2C200</color>
+    <color name="gris_texto">#FF5F6B63</color>
 </resources>
